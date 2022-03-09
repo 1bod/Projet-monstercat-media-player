@@ -19,6 +19,7 @@ import os
 #
 #   Amélioration appotées:
 #   - Les 9 musiques sont tirées des dernières sorties de l'api monstercat
+#   - Possibilité de télécharger les musiques directement depuis l'api monstercat
 #
 
 
@@ -40,7 +41,7 @@ def debut():
         debutmusique(son)
         
 def setVolume(volume):
-    mixer.music.set_volume(volume)
+    mixer.music.set_volume(volume/100)
 
 class cdrom():
     def __init__(self, son=''):
@@ -196,6 +197,12 @@ def recherche(terme, nombre, fenetreResultats):
         i+=1
     fenetreRecherche.update_idletasks()
 
+def setProgression(nouvelleProgression:int):
+    """Mets à jour la progression du titre"""
+    global progression
+    
+    
+
 def menu(fenetre, images, sons):
     global Continue, son
     #création des 9 boutons
@@ -226,16 +233,25 @@ def menu(fenetre, images, sons):
     b2.grid(row=2,column=9)
     b2=Button(fenetre, text="Changer\nmusique", bg="yellow", fg="black", font=ft, command=openResearch)
     b2.grid(row=3,column=9)
-    #volume=IntVar()
-    #volume.set(100)
-    #scaleVolume=Scale(fenetre, from_=100, to=0, orient=VERTICAL, variable=volume, command=lambda vol=volume.get(): setVolume(int(vol)))
-    #scaleVolume.grid(row=5,column=9)
+    volume=IntVar()
+    volume.set(100)
+    scaleVolume=Scale(fenetre, from_=100, to=0, orient=VERTICAL, variable=volume, command=lambda vol=volume.get(): setVolume(int(vol)))
+    scaleVolume.grid(row=5,column=9)
+    
+    menuBas=Frame(fenetre)
+    menuBas.grid(row=9,column=0,columnspan=10,sticky='nsew')
+    #barre de progression du titre
+    progressionBarre=IntVar()
+    progressionBarre.set(0)
+    barreProgression=Scale(menuBas,showvalue=0,length=500,sliderlength=10, from_=0, to=100,variable=progressionBarre, orient='horizontal', command=lambda prog=progressionBarre.get(): setProgression(prog))
+    barreProgression.pack(side='top', fill='x')
+    
     Continue = False
     
 def demarrage():
-    global fenetre, Continue, son
+    global fenetre, Continue, son, progression
     # obtention des dernières sorties à partir de l'api monstercat
-
+    
     pb.start(1)
     res= requests.get("https://www.monstercat.com/api/releases").json()
     # création d'une liste de sorties
@@ -266,6 +282,8 @@ def demarrage():
     #fond.grid(row=0, column=0, rowspan=9, columnspan=10)
     Continue=False
     son=''
+    progression=IntVar()
+    progression.set(0)
     images=liste_image(sorties)
     menu(fenetre, images, sorties)
     fenetre.mainloop()
