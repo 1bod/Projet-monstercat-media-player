@@ -1,16 +1,14 @@
 #musique.py
-from email.mime import audio
-from glob import glob
+
 from tkinter import *
 import tkinter.ttk as ttk
 from PIL import ImageTk, Image
-from matplotlib import image
-from matplotlib.pyplot import grid
 from pygame import mixer
 from image import *
 import requests 
 import shutil
 import os
+import monstercat_api
 
 #   Le module pygame est utilisé pour la lecture des musiques en format mp3
 #   En effet, l'api monstercat ne founit pas les fichiers audio au format mp3
@@ -24,7 +22,7 @@ import os
 
 
 def debutmusique(audio):
-    
+    global musicPosFront
     mixer.music.load(audio)
     mixer.music.play()
     #PlaySound(son,1)
@@ -48,6 +46,7 @@ class cdrom():
         self.son=son
     def start(self):
         global son
+        
         debut()
 
 def change(numero, audio):
@@ -105,44 +104,12 @@ def openResearch():
     
     fenetreRecherche.bind_all("<MouseWheel>", on_mousewheel)
 
-def getTrack(CatalogID:str) -> tuple[str, str]:
-    """ Recherche un titre à partir de son identifiant"""
-    res= requests.get("https://www.monstercat.com/api/catalog/release/{}".format(CatalogID)).json()
-    title=res["Release"]["Title"].replace("/", " ").replace("\\", " ").replace("?", " ").replace("*", " ").replace("\"", " ").replace("<", " ").replace(">", " ").replace("|", " ")
-    exists=False
-    for root, dirs, files in os.walk("images/"):
-        if '{}.jpeg'.format(CatalogID) in files:
-            exists=True
-    #si l'image existe déja, on ne la télécharge pas
-    if not exists:
-        #récupération de la couverture du titre
-        cover=requests.get("https://www.monstercat.com/release/{}/cover".format(CatalogID), stream=True)
-        #stockage de l'image
-        with open('images/{}.jpeg'.format(CatalogID), 'wb') as out_file:
-            shutil.copyfileobj(cover.raw, out_file)
-        del cover
-        print("Image {}.jpeg téléchargée".format(CatalogID))
-    
-    #même chose pour le fichier son
-    exists=False
-    for root, dirs, files in os.walk("chansons/"):
-        if '{}.mp3'.format(CatalogID+" - "+title) in files:
-            exists=True
-    #si le fichier existe déja, on ne le télécharge pas
-    if not exists:
-        #récupération du titre
-        titre=requests.get("https://www.monstercat.com/api/release/{}/track-stream/{}".format(res["Release"]["Id"],res["Tracks"][0]["Id"]), stream=True)
-        #stockage du titre
-        with open('chansons/{}.mp3'.format(CatalogID+" - "+title), 'wb') as out_file:
-            shutil.copyfileobj(titre.raw, out_file)
-        del titre
-        print("Titre {}.mp3 téléchargé".format(CatalogID+" - "+title))
-    return 'chansons/{}.mp3'.format(CatalogID+" - "+title), 'images/{}.jpeg'.format(CatalogID)
+
 
 def charger(CatalogID:str, emplacementARemplacer:int):
     global fenetre
     print(CatalogID)
-    audioPath, imagePath=getTrack(CatalogID)
+    audioPath, imagePath=monstercat_api.get_track(CatalogID, "chansons", "images")
     print(audioPath, imagePath)
     nouvelleIimage=ImageTk.PhotoImage(Image.open(imagePath).resize((300, 300)))
 
@@ -151,6 +118,8 @@ def charger(CatalogID:str, emplacementARemplacer:int):
     fenetreRecherche.destroy()
     fenetre.mainloop( )
 
+
+    
 
 def recherche(terme, nombre, fenetreResultats):
     """Recherche de musiques via l api monstercat et affichage des résultats"""
@@ -162,26 +131,17 @@ def recherche(terme, nombre, fenetreResultats):
         CatalogID=resultat["Release"]["CatalogId"]
         if resultat["Streamable"]==True and not CatalogID in titresCharges:
             #on récupère l'image
-            exists=False
-            for root, dirs, files in os.walk("images/"):
-                if '{}.jpeg'.format(CatalogID) in files:
-                    exists=True
-                    #print("l'image existe deja", exists)
-            #si l'image existe déja, on ne la télécharge pas
-            imgPath='images/{}.jpeg'.format(CatalogID)
-            if not exists:
-                #récupération de la couverture du titre
-                cover=requests.get("https://www.monstercat.com/release/{}/cover".format(CatalogID), stream=True)
-                #stockage de l'image
-                with open(imgPath, 'wb') as out_file:
-                    shutil.copyfileobj(cover.raw, out_file)
-                del cover
-                print("Image {}.jpeg téléchargée".format(CatalogID))
+            img_path=monstercat_api.get_cover(CatalogID, "images/")
+            print("Image {}.jpeg téléchargée".format(CatalogID))
             
-            img=ImageTk.PhotoImage(Image.open(imgPath).resize((200,200)))
+            img=ImageTk.PhotoImage(Image.open(img_path).resize((200,200)))
             titres.append((resultat["Release"]["Title"],img, CatalogID))
             titresCharges.append(CatalogID)
     
+    
+    resultats=monstercat_api.search(terme, nombre)
+    for resultat in resultats:
+        catalog_id=resultat["Release"]["CatalogId"]
     i=0
     for titre in titres:
         #on crée un bouton pour chaque résultat dans une grille avec 5 colonnes
@@ -235,7 +195,7 @@ def menu(fenetre, images, sons):
     b2.grid(row=3,column=9)
     volume=IntVar()
     volume.set(100)
-    scaleVolume=Scale(fenetre, from_=100, to=0, orient=VERTICAL, variable=volume, command=lambda vol=volume.get(): setVolume(int(vol)))
+    scaleVolume=Scale(fenetre, from_=100, to=0, orient='vertical', variable=volume, command=lambda vol=volume.get(): setVolume(int(vol)))
     scaleVolume.grid(row=5,column=9)
     
     menuBas=Frame(fenetre)
@@ -249,17 +209,16 @@ def menu(fenetre, images, sons):
     Continue = False
     
 def demarrage():
-    global fenetre, Continue, son, progression
+    global fenetre, Continue, son, progression, musicPosFront
     # obtention des dernières sorties à partir de l'api monstercat
     
     pb.start(1)
-    res= requests.get("https://www.monstercat.com/api/releases").json()
+    releases=monstercat_api.get_releases()
     # création d'une liste de sorties
     sorties=[]
-    for sortie in res["Releases"]["Data"]:
+    for sortie in releases["Releases"]["Data"]:
         if sortie["Streamable"] == True and len(sorties)<9:
-            #recherche de l'image
-            audioPath, imagePath = getTrack(sortie["CatalogId"])
+            audioPath, imagePath = monstercat_api.get_track(sortie["CatalogId"],"chansons","images")
             sorties.append((sortie["CatalogId"],audioPath, imagePath))
             try:
                 pb.step(10)
@@ -284,6 +243,7 @@ def demarrage():
     son=''
     progression=IntVar()
     progression.set(0)
+    musicPosFront=(0,0)
     images=liste_image(sorties)
     menu(fenetre, images, sorties)
     fenetre.mainloop()
