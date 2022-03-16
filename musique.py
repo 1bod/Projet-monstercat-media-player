@@ -132,7 +132,7 @@ def recherche(terme, nombre, fenetreResultats):
         if resultat["Streamable"]==True and not CatalogID in titresCharges:
             #on récupère l'image
             img_path=monstercat_api.get_cover(CatalogID, "images/")
-            print("Image {}.jpeg téléchargée".format(CatalogID))
+            #print("Image {}.jpeg téléchargée".format(CatalogID))
             
             img=ImageTk.PhotoImage(Image.open(img_path).resize((200,200)))
             titres.append((resultat["Release"]["Title"],img, CatalogID))
