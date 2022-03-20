@@ -148,7 +148,7 @@ def recherche(terme, nombre, fenetreResultats):
         #chaque bouton est contenu dans un cadre
         frame=Frame(fenetreResultats)
         #print(i)
-        bouton=Button(frame, image=titre[1], height=200, width=200,compound = TOP, command=lambda c=titre[2]: charger(c, nbRemplacement.get()))
+        bouton=Button(frame, image=titre[1],  width=200,compound = TOP, command=lambda c=titre[2]: charger(c, nbRemplacement.get()))
         bouton.pack(side=TOP)
         lbl=Label(frame, text=titre[0])
         lbl.pack(side=BOTTOM)
