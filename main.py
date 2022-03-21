@@ -9,6 +9,10 @@
 #   - Les 9 musiques sont tirées des dernières sorties de l'api monstercat
 #   - Possibilité de télécharger les musiques directement depuis l'api monstercat
 #   - Refonte complète du code de base
+#   - Refonte graphique
+#   - Lecture aléatoire
+#   - Lecture en boucle
+#   - Réglage du volume
 #
 
 import monstercat_api
@@ -32,7 +36,6 @@ def startup(objet_fenetre:interface.Chargement):
     objet_fenetre.destroy()
 
     fenetre.demarrage()
-        
 
 if __name__ == "__main__":
     chargement=interface.Chargement("Téléchargement des derniers titres...", callback=startup)
