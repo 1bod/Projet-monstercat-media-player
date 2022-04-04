@@ -1,4 +1,4 @@
-"""Module contenant les fonctions de l'interface graphique du projet jukebox"""
+"""Module contenant les fonctions de l'interface graphique du projet monstercat_media_player"""
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -6,19 +6,17 @@ from PIL import ImageTk, Image
 
 class App(tk.Frame):
     """Classe principale de l'interface graphique"""
-    def __init__(self, master:tk.Tk, sorties, jukebox):
+    def __init__(self, master:tk.Tk, sorties, monstercat_media_player):
         super().__init__(master)
-
         self.configure(background="red")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        #self.iconbitmap("jukebox.ico")
         b=tk.Button(self.master, text="Quitter", command=self.destroy_window_object)
         b.grid(row=0, column=0, sticky="nsew")
         i=0
         for sortie in sorties:
             image=ImageTk.PhotoImage(Image.open(sortie[2]).resize((300,300)))
-            button_sortie=tk.Button(self.master, borderwidth=0, image=image, height=300, width=300, command=lambda sortie=sortie:jukebox.jouer(sortie[1]))
+            button_sortie=tk.Button(self.master, borderwidth=0, image=image, height=300, width=300, command=lambda sortie=sortie:monstercat_media_player.jouer(sortie[1]))
             button_sortie.grid(row=i//3, column=i%3, sticky="wn")
             i+=1
         self.grid(row=0, column=0, sticky="nsew")

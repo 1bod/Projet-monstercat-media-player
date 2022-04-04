@@ -93,9 +93,9 @@ def open_research(window):
     canvas.pack(side='top', padx=5, pady=5, fill='both', expand=True)
     defil_y.pack(side='right', fill='y',)
     #defil_y.grid(row=0, column=5, sticky='ns')
-    def on_mousewheel(event):
+    def on_mousewheel_recherche(event):
         canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-    FENETRE_RECHERCHE.bind_all("<MouseWheel>", on_mousewheel)
+    FENETRE_RECHERCHE.bind("<MouseWheel>", on_mousewheel_recherche)
 
 def recherche(terme, nb_results, cadre_resultats,window):
     """Recherche les musiques correspondant au terme dans le catalogue"""
@@ -147,21 +147,21 @@ def charger(cid, window):
     demarrage()
 
 
-def construction_bouton(frame,image,texte,audiopath, jukebox):
+def construction_bouton(frame,image,texte,audiopath, monstercat_media_player):
     """Crée un bouton avec l'image et le texte"""
-    button_musique = ttk.Button(frame, image=image, text= texte, command=lambda:jukebox.jouer(audiopath))
+    button_musique = ttk.Button(frame, image=image, text= texte, command=lambda:monstercat_media_player.jouer(audiopath))
     return button_musique
 
 def demarrage():
     """Fonction de démarrage de l'application"""
-    global JUKEBOX
-    JUKEBOX = Musique()
+    global MONSTERCAT_MEDIA_PLAYER
+    MONSTERCAT_MEDIA_PLAYER = Musique()
 
     liste_musique = os.listdir('chansons')
 
 
     window = tk.Tk()
-    window.title("JukeBox")
+    window.title("Monstercat media player")
     window.geometry("570x570")
     window.resizable(False,False)
     window.iconbitmap('images/icone.ico')
@@ -176,7 +176,7 @@ def demarrage():
     sound_frame = tk.Frame(container)
     volume = tk.IntVar()
     volume.set(50)
-    scrollbar_sound = ttk.Scale(sound_frame, orient="vertical", command=lambda vol=volume.get():JUKEBOX.set_volume(vol), variable=volume, from_=1.0, to=0.0, length=200)
+    scrollbar_sound = ttk.Scale(sound_frame, orient="vertical", command=lambda vol=volume.get():MONSTERCAT_MEDIA_PLAYER.set_volume(vol), variable=volume, from_=1.0, to=0.0, length=200)
 
 
     plus_image = ImageTk.PhotoImage(Image.open("images/plus.png").resize((45,45), Image.ANTIALIAS))
@@ -193,9 +193,9 @@ def demarrage():
             scrollregion=canvas.bbox("all")
             )
         )
-    def on_mousewheel(event):
+    def on_mousewheel_base(event):
         canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-    window.bind_all("<MouseWheel>", on_mousewheel)
+    window.bind("<MouseWheel>", on_mousewheel_base)
 
     canvas.create_window((0,0),window=scrollable_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
@@ -218,7 +218,7 @@ def demarrage():
         les_chansons.append(audiopath)
 
 
-        construction_bouton(frame,les_images[-1],texte,les_chansons[-1], JUKEBOX).pack(side="left", fill="both", expand=True)
+        construction_bouton(frame,les_images[-1],texte,les_chansons[-1], MONSTERCAT_MEDIA_PLAYER).pack(side="left", fill="both", expand=True)
 
         if compteur%3==0:
             frame.pack(fill="both")
@@ -244,9 +244,9 @@ def demarrage():
     again_image = ImageTk.PhotoImage(Image.open("images/again.png").resize((80,30), Image.ANTIALIAS))
     play_pause_image = ImageTk.PhotoImage(Image.open("images/play_pause.png").resize((80,30), Image.ANTIALIAS))
     aleatoire_image = ImageTk.PhotoImage(Image.open("images/aleatoire.png").resize((80,30), Image.ANTIALIAS))
-    bouton_alea = ttk.Button(upper_barre,command=lambda:JUKEBOX.jouer(random.choice(les_chansons)), image= aleatoire_image)
-    bouton_play_pause = ttk.Button(upper_barre, command=JUKEBOX.play_pause, image= play_pause_image)
-    bouton_again = ttk.Button(upper_barre, command=lambda:JUKEBOX.set_progress(0), image=again_image)
+    bouton_alea = ttk.Button(upper_barre,command=lambda:MONSTERCAT_MEDIA_PLAYER.jouer(random.choice(les_chansons)), image= aleatoire_image)
+    bouton_play_pause = ttk.Button(upper_barre, command=MONSTERCAT_MEDIA_PLAYER.play_pause, image= play_pause_image)
+    bouton_again = ttk.Button(upper_barre, command=lambda:MONSTERCAT_MEDIA_PLAYER.set_progress(0), image=again_image)
 
 
     container.pack(fill="both", expand=True)
@@ -270,23 +270,23 @@ def demarrage():
 
     #image1 = tk.PhotoImage(file = "image1.png")
     #button_1 = tk.Button(window, image = image1)
-    JUKEBOX.set_volume(0.25)
+    MONSTERCAT_MEDIA_PLAYER.set_volume(0.25)
     volume.set(0.25)
     #window.after(100, progress_update)
     window.mainloop()
     """
     PROGRESSBAR NON FONCTIONNELLE
 def update_progress_from_user(new_progress:float):
-    global JUKEBOX, variable_barre
-    #print(type(new_progress),new_progress, type(JUKEBOX.get_length()), JUKEBOX.get_length())
-    new_progress=(float(new_progress)/1000)*JUKEBOX.get_length()
-    JUKEBOX.set_progress(new_progress)
+    global MONSTERCAT_MEDIA_PLAYER, variable_barre
+    #print(type(new_progress),new_progress, type(MONSTERCAT_MEDIA_PLAYER.get_length()), MONSTERCAT_MEDIA_PLAYER.get_length())
+    new_progress=(float(new_progress)/1000)*MONSTERCAT_MEDIA_PLAYER.get_length()
+    MONSTERCAT_MEDIA_PLAYER.set_progress(new_progress)
     variable_barre.set(new_progress)
 
 def progress_update():
     global variable_barre
-    if JUKEBOX.get_busy(): #si un titre est en cours de lecture
-        variable_barre.set((JUKEBOX.get_progress()/JUKEBOX.get_length())*1000)
+    if MONSTERCAT_MEDIA_PLAYER.get_busy(): #si un titre est en cours de lecture
+        variable_barre.set((MONSTERCAT_MEDIA_PLAYER.get_progress()/MONSTERCAT_MEDIA_PLAYER.get_length())*1000)
     t1=threading.Timer(1, progress_update)
     t1.start()"""
 

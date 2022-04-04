@@ -1,4 +1,4 @@
-"""Module principal du Projet jukebox"""
+"""Module principal du Projet monstercat media player"""
 
 #   Le module pygame est utilisé pour la lecture des musiques en format mp3
 #   En effet, l'api monstercat ne founit pas les fichiers audio au format mp3
