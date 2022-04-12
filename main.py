@@ -13,26 +13,43 @@
 #   - Lecture aléatoire
 #   - Lecture en boucle
 #   - Réglage du volume
+#   - Multithreading lors du chargment des musiques
 #
 
+from concurrent.futures import thread
 import monstercat_api
 import interface
 import fenetre
+from threading import Thread
+
+
 
 def startup(objet_fenetre:interface.Chargement):
     """Fonction de démarrage du programme"""
+    threads = []
+    results= []
     releases=monstercat_api.get_releases()
     # création de la liste des sorties à afficher
     sorties=[] #sorties[] = (CatalogId, AudioPath, CoverPath)
     for sortie in releases["Releases"]["Data"]:
         if sortie["Streamable"] is True and len(sorties)<9:
-            audio_path, image_path = monstercat_api.get_track(sortie["CatalogId"],"chansons","images")
-            sorties.append((sortie["CatalogId"],audio_path, image_path))
+
+            thread = Thread(target=monstercat_api.get_track, args=(sortie["CatalogId"],"chansons","images", results))
+            threads.append(thread)
             try:
                 objet_fenetre.add_progress(10)
                 objet_fenetre.update_idletasks()
             except: # pylint: disable=bare-except
                 pass
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    for result in results:
+        sorties.append((sortie["CatalogId"],result[0],result[1]))
+    
+    # audio_path, image_path = monstercat_api.get_track(sortie["CatalogId"],"chansons","images")
+    #sorties.append((sortie["CatalogId"],audio_path, image_path))
     objet_fenetre.destroy()
 
     fenetre.demarrage()
@@ -40,5 +57,3 @@ def startup(objet_fenetre:interface.Chargement):
 if __name__ == "__main__":
     chargement=interface.Chargement("Téléchargement des derniers titres...", callback=startup)
     chargement.start()
-    
-    

@@ -26,7 +26,7 @@ def save(data, path:str, force=False):
             shutil.copyfileobj(data.raw, out_file)
     del data
         
-def get_cover(catalog_id:str, image_path:str) -> str:
+def get_cover(catalog_id:str, image_path:str, results=[]) -> str:
     """Récupère la couverture d'un titre à partir de l'api monstercat et l'enregistre dans l'emplacement spécifié"""
     try:
         cover=requests.get("https://www.monstercat.com/release/{}/cover".format(catalog_id), stream=True)
@@ -43,12 +43,13 @@ def get_cover(catalog_id:str, image_path:str) -> str:
     title=res["Release"]["Title"].replace("/", " ").replace("\\", " ").replace("?", " ").replace("*", " ").replace("\"", " ").replace("<", " ").replace(">", " ").replace("|", " ") # nettoyage du nom du titre pour pouvoir l'enregistrer
     save(cover, image_path+title+".jpeg")
     print("Image {}.jpeg téléchargée".format(title))
+    results.append('{}{}.jpeg'.format(image_path,title))
     return '{}{}.jpeg'.format(image_path,title)
 
 def get_track(
     catalog_id:str,
     audio_path:str,
-    image_path:str
+    image_path:str, results=[]
 ) -> tuple[str,str]:
     """Fonction qui télécharge un titre si il n'est pas déja présent dans le dossier passé en paramètre"""
     try:
@@ -83,6 +84,7 @@ def get_track(
     #stockage du fichier
     save(titre, audio_path+title+".mp3")
     print("Titre {}.mp3 téléchargé".format(title))
+    results.append(('{}{}.mp3'.format(audio_path,title), '{}{}.jpeg'.format(image_path,title)))
     return '{}{}.mp3'.format(audio_path,title), '{}{}.jpeg'.format(image_path,title)
 
 def get_releases() -> dict:

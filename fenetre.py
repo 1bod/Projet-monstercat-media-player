@@ -10,6 +10,8 @@ import random
 from PIL import ImageTk, Image
 from pygame import mixer
 import monstercat_api
+from threading import Thread
+import time
 """
 Volé chez max
 """
@@ -105,15 +107,29 @@ def recherche(terme, nb_results, cadre_resultats,window):
     global LISTE_IMAGE_RECHERCHE
     LISTE_IMAGE_RECHERCHE = []
     res=monstercat_api.search(terme, nb_results)
+    threads = []
+    results= []
+    temp_titre={}
     for resultat in res:
         catalog_id=resultat["Release"]["CatalogId"]
         if resultat["Streamable"] is True and not catalog_id in titres_charges:
             #on récupère l'image
-            img_path=monstercat_api.get_cover(catalog_id, "images/")
-            #print("Image {}.jpeg téléchargée".format(catalog_id))
-            img=ImageTk.PhotoImage(Image.open(img_path).resize((200,200)))
-            titres.append((resultat["Release"]["Title"],img, catalog_id))
-            titres_charges.append(catalog_id)
+            #img_path=monstercat_api.get_cover(catalog_id, "images/")
+            thread = Thread(target=monstercat_api.get_cover, args=(catalog_id, "images/", results))
+            threads.append(thread)
+            temp_titre[resultat["Release"]["Title"]]=catalog_id
+            
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    for img_path in results:
+        #print("Image {}.jpeg téléchargée".format(catalog_id))
+        print(img_path)
+        img=ImageTk.PhotoImage(Image.open(img_path).resize((200,200)))
+        img_title=img_path[7:-5]
+        titres.append((img_title,img, temp_titre[img_title]))
+        titres_charges.append(temp_titre[img_title])
     i=0
     for titre in titres:
         #on crée un bouton pour chaque résultat dans une grille avec 5 colonnes
@@ -121,7 +137,7 @@ def recherche(terme, nb_results, cadre_resultats,window):
         frame=tk.Frame(cadre_resultats)
         #print(i)
         print(titre)
-        img=ImageTk.PhotoImage(Image.open(str("images/"+titre[0]+".jpeg")).resize((200,200), Image.ANTIALIAS))
+        img=ImageTk.PhotoImage(Image.open(str("images/"+titre[0]+".jpeg")).resize((200,200)))
         LISTE_IMAGE_RECHERCHE.append(img)
         bouton=ttk.Button(frame, image=LISTE_IMAGE_RECHERCHE[-1],compound = "top", command=lambda c=titre[2]: charger(c, window))
         bouton.pack(side="top")
@@ -130,7 +146,7 @@ def recherche(terme, nb_results, cadre_resultats,window):
         #print("position : x={} y={}".format(i%5, i//5))
         frame.grid(row=i//5,column=i%5)
         i+=1
-    input()
+    
     FENETRE_RECHERCHE.update()
 
 
@@ -157,7 +173,6 @@ def demarrage():
     global MONSTERCAT_MEDIA_PLAYER
     MONSTERCAT_MEDIA_PLAYER = Musique()
 
-    liste_musique = os.listdir('chansons')
 
 
     window = tk.Tk()
@@ -203,15 +218,35 @@ def demarrage():
 
 
 
+    liste_musique = os.listdir('chansons')
     les_images = []
     les_chansons = []
     compteur = 0
+    """ Multithreading ?
+    threads = []
+    final_result=[]
+    # Open
+    def thread_Image_open(path, result=[]):
+        result.append(ImageTk.PhotoImage(Image.open(path).resize((150,150))))
+        
     for elt in liste_musique:
+        threads.append(Thread(target=thread_Image_open, args=('images/'+elt[:-4]+".jpeg",final_result)))
+
+    for thread in threads:
+        thread.start()
+        print(final_result)
+    for thread in threads:
+        thread.join()
+    i="""
+    for elt in liste_musique:
+        #image=final_result[i]
+        #i+=1
+        t1=time.time()
         if compteur == 0:
             frame = tk.Frame(scrollable_frame)
         compteur+=1
         print('images/'+elt[:-4]+".jpeg")
-        image = ImageTk.PhotoImage(Image.open('images/'+elt[:-4]+".jpeg").resize((150,150), Image.ANTIALIAS))
+        image = ImageTk.PhotoImage(Image.open('images/'+elt[:-4]+".jpeg").resize((150,150)))
         texte = elt[:-4]
         audiopath = 'chansons/'+elt
         les_images.append(image)
@@ -223,8 +258,9 @@ def demarrage():
         if compteur%3==0:
             frame.pack(fill="both")
             frame = tk.Frame(scrollable_frame)
+        print(time.time()-t1)
     frame.pack()
-
+    
 
     # Progression
     frame_barre = tk.Frame(window)
