@@ -137,7 +137,7 @@ def recherche(terme, nb_results, cadre_resultats,window):
         frame=tk.Frame(cadre_resultats)
         #print(i)
         print(titre)
-        img=ImageTk.PhotoImage(Image.open(str("images/"+titre[0]+".jpeg")).resize((200,200)))
+        img=ImageTk.PhotoImage(Image.open("images/"+titre[0]+".jpeg").resize((200,200)))
         LISTE_IMAGE_RECHERCHE.append(img)
         bouton=ttk.Button(frame, image=LISTE_IMAGE_RECHERCHE[-1],compound = "top", command=lambda c=titre[2]: charger(c, window))
         bouton.pack(side="top")
@@ -157,10 +157,36 @@ NOUVEAU CODE
 
 def charger(cid, window):
     """Charge la musique correspondant au catalog_id"""
-    destroy_window(window)
     print(cid)
-    monstercat_api.get_track(cid, "chansons/", "images/")
+    releases=monstercat_api.get_release(cid)
+    #print(releases['Tracks'])
+    if len(releases['Tracks'])==1: #si la release est un single
+        monstercat_api.get_track(cid, "chansons/", "images/")#on télécharge la musique et on relance la fenêtre
+        destroy_window(window) # destruction de la fenetre de recherche
+        demarrage()
+    else:#sinon si la release est un album
+        titre=releases['Release']['Title'].replace("/", " ").replace("\\", " ").replace("?", " ").replace("*", " ").replace("\"", " ").replace("<", " ").replace(">", " ").replace("|", " ")
+        title_select_win=tk.Toplevel()
+        title_select_win.title("{} - Sélectionner une chanson".format(titre))
+        title_select_win.geometry("500x500")
+        img=ImageTk.PhotoImage(Image.open("images/"+titre+".jpeg").resize((150,150)))
+        i=0
+        for title in releases["Tracks"]:
+            frame=tk.Frame(title_select_win)
+            bouton=ttk.Button(frame, image=img,compound = "top", command=lambda track_id=title['Id'], t=title['Title']: select_track(cid, track_id,title["Release"]["Id"],t, window))
+            bouton.pack(side="top")
+            lbl=tk.Label(frame, text=title['Title'])
+            lbl.pack(side='bottom')
+            #print("position : x={} y={}".format(i%3, i//3))
+            frame.grid(row=i//3,column=i%3)
+            i+=1
+        title_select_win.mainloop()
+
+def select_track(catalog_id,release_id, track_id, title, window):
+    monstercat_api.get_unique_track(catalog_id,release_id, track_id,"images/", "chansons/", title)
+    destroy_window(window)
     demarrage()
+
 
 
 def construction_bouton(frame,image,texte,audiopath, monstercat_media_player):

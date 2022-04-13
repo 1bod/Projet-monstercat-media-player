@@ -49,9 +49,10 @@ def get_cover(catalog_id:str, image_path:str, results=[]) -> str:
 def get_track(
     catalog_id:str,
     audio_path:str,
-    image_path:str, results=[]
+    image_path:str, 
+    results=[]
 ) -> tuple[str,str]:
-    """Fonction qui télécharge un titre si il n'est pas déja présent dans le dossier passé en paramètre"""
+    """Fonction qui télécharge le premier titre lié à l'identifiant de sortie s'il n'est pas déja présent dans le dossier passé en paramètre"""
     try:
         res= requests.get("https://www.monstercat.com/api/catalog/release/{}".format(catalog_id)).json()
     except ConnectionError:
@@ -86,6 +87,42 @@ def get_track(
     print("Titre {}.mp3 téléchargé".format(title))
     results.append(('{}{}.mp3'.format(audio_path,title), '{}{}.jpeg'.format(image_path,title)))
     return '{}{}.mp3'.format(audio_path,title), '{}{}.jpeg'.format(image_path,title)
+
+def get_unique_track(catalog_id:str, release_id:str, track_id:str,image_path:str, audio_path:str, title:str) -> str:
+    if not audio_path.endswith("/"):
+        audio_path+="/"
+    if not image_path.endswith("/"):
+        image_path+="/"
+    try:
+        cover=requests.get("https://www.monstercat.com/release/{}/cover".format(catalog_id), stream=True)
+    except ConnectionError:
+        print("Erreur de connexion: Aucun accès internet")
+        raise ConnectionError from ConnectionError
+    #stockage de l'image
+    save(cover, image_path+title+".jpeg")
+    print("Image {}.jpeg téléchargée".format(title))
+    
+    try:
+        titre=requests.get("https://player.monstercat.app/api/release/{}/track-stream/{}".format(track_id,release_id), stream=True)
+    except ConnectionError:
+        print("Erreur de connexion: Aucun accès internet")
+        raise ConnectionError from ConnectionError
+    save(titre, audio_path+title+".mp3")
+    print("Titre {}.mp3 téléchargé".format(title))
+    
+
+def get_release(catalog_id:str, results=[]) -> list:
+    """
+    Fonction qui récupère toutes les informations liés à une sortie
+    """
+    try:
+        res = requests.get("https://www.monstercat.com/api/catalog/release/{}".format(catalog_id)).json()
+    except ConnectionError:
+        print("Erreur de connexion: Aucun accès internet")
+        raise ConnectionError from ConnectionError
+    results.append(res)
+    return res
+    
 
 def get_releases() -> dict:
     """Fonction qui renvoie un dictionnaire des dernières sorties disponibles sur l'api Monstercat"""
