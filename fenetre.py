@@ -12,9 +12,9 @@ from pygame import mixer
 import monstercat_api
 from threading import Thread
 import time
-"""
-Volé chez max
-"""
+
+# Volé chez max
+
 
 class Musique():
     """Objet contenant les fonctions relatives à la musique"""
@@ -118,6 +118,7 @@ def recherche(terme, nb_results, cadre_resultats,window):
             thread = Thread(target=monstercat_api.get_cover, args=(catalog_id, "images/", results))
             threads.append(thread)
             temp_titre[resultat["Release"]["Title"]]=catalog_id
+            titres_charges.append(catalog_id)
             
     for thread in threads:
         thread.start()
@@ -129,7 +130,7 @@ def recherche(terme, nb_results, cadre_resultats,window):
         img=ImageTk.PhotoImage(Image.open(img_path).resize((200,200)))
         img_title=img_path[7:-5]
         titres.append((img_title,img, temp_titre[img_title]))
-        titres_charges.append(temp_titre[img_title])
+        
     i=0
     for titre in titres:
         #on crée un bouton pour chaque résultat dans une grille avec 5 colonnes
@@ -141,7 +142,11 @@ def recherche(terme, nb_results, cadre_resultats,window):
         LISTE_IMAGE_RECHERCHE.append(img)
         bouton=ttk.Button(frame, image=LISTE_IMAGE_RECHERCHE[-1],compound = "top", command=lambda c=titre[2]: charger(c, window))
         bouton.pack(side="top")
-        lbl=tk.Label(frame, text=titre[0])
+        if len(titre[0])>30:
+            titre_affichage=titre[0][:30]+"..."
+        else:
+            titre_affichage=titre[0]
+        lbl=tk.Label(frame, text=titre_affichage)
         lbl.pack(side='bottom')
         #print("position : x={} y={}".format(i%5, i//5))
         frame.grid(row=i//5,column=i%5)
@@ -167,12 +172,32 @@ def charger(cid, window):
     else:#sinon si la release est un album
         titre=releases['Release']['Title'].replace("/", " ").replace("\\", " ").replace("?", " ").replace("*", " ").replace("\"", " ").replace("<", " ").replace(">", " ").replace("|", " ")
         title_select_win=tk.Toplevel()
-        title_select_win.title("{} - Sélectionner une chanson".format(titre))
-        title_select_win.geometry("500x500")
+        
+        canvas_album = tk.Canvas(title_select_win)
+        scrollbar_album = ttk.Scrollbar(title_select_win, orient="vertical", command=canvas_album.yview)
+        scrollable_frame_album = ttk.Frame(canvas_album)
+        scrollable_frame_album.bind(
+        "<Configure>",
+        lambda e:canvas_album.configure(
+            scrollregion=canvas_album.bbox("all")
+            )
+        )
+        def on_mousewheel_album(event):
+            canvas_album.yview_scroll(int(-1*(event.delta/120)), "units")
+        title_select_win.bind("<MouseWheel>", on_mousewheel_album)
+        
+        canvas_album.create_window((0,0),window=scrollable_frame_album, anchor="nw")
+        canvas_album.configure(yscrollcommand=scrollbar_album.set)
+        canvas_album.pack(side="left", fill="both", expand=True)
+        scrollbar_album.pack(side="right", fill="y",padx=5)
+        
+        
+        title_select_win.title("{} - Sélectionner un titre".format(titre))
+        title_select_win.geometry("500x510")
         img=ImageTk.PhotoImage(Image.open("images/"+titre+".jpeg").resize((150,150)))
         i=0
         for title in releases["Tracks"]:
-            frame=tk.Frame(title_select_win)
+            frame=tk.Frame(scrollable_frame_album)
             bouton=ttk.Button(frame, image=img,compound = "top", command=lambda track_id=title['Id'], t=title['Title']: select_track(cid, track_id,title["Release"]["Id"],t, window))
             bouton.pack(side="top")
             lbl=tk.Label(frame, text=title['Title'])
@@ -191,7 +216,7 @@ def select_track(catalog_id,release_id, track_id, title, window):
 
 def construction_bouton(frame,image,texte,audiopath, monstercat_media_player):
     """Crée un bouton avec l'image et le texte"""
-    button_musique = ttk.Button(frame, image=image, text= texte, command=lambda:monstercat_media_player.jouer(audiopath))
+    button_musique = ttk.Button(frame, image=image, text= texte, command=lambda:monstercat_media_player.jouer(audiopath), compound="top")
     return button_musique
 
 def demarrage():
@@ -203,7 +228,7 @@ def demarrage():
 
     window = tk.Tk()
     window.title("Monstercat media player")
-    window.geometry("570x570")
+    window.geometry("555x570")
     window.resizable(False,False)
     window.iconbitmap('images/icone.ico')
 
@@ -240,9 +265,6 @@ def demarrage():
 
     canvas.create_window((0,0),window=scrollable_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
-
-
-
 
     liste_musique = os.listdir('chansons')
     les_images = []

@@ -16,11 +16,10 @@
 #   - Multithreading lors du chargment des musiques
 #
 
-from concurrent.futures import thread
+from threading import Thread
 import monstercat_api
 import interface
 import fenetre
-from threading import Thread
 
 
 
@@ -31,9 +30,10 @@ def startup(objet_fenetre:interface.Chargement):
     releases=monstercat_api.get_releases()
     # création de la liste des sorties à afficher
     sorties=[] #sorties[] = (CatalogId, AudioPath, CoverPath)
+    nombre_telecharge=0
     for sortie in releases["Releases"]["Data"]:
-        if sortie["Streamable"] is True and len(sorties)<9:
-
+        if sortie["Streamable"] is True and nombre_telecharge<12:
+            nombre_telecharge+=1
             thread = Thread(target=monstercat_api.get_track, args=(sortie["CatalogId"],"chansons","images", results))
             threads.append(thread)
             try:
@@ -51,7 +51,6 @@ def startup(objet_fenetre:interface.Chargement):
     # audio_path, image_path = monstercat_api.get_track(sortie["CatalogId"],"chansons","images")
     #sorties.append((sortie["CatalogId"],audio_path, image_path))
     objet_fenetre.destroy()
-
     fenetre.demarrage()
 
 if __name__ == "__main__":
