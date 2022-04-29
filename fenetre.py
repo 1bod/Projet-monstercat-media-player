@@ -289,6 +289,8 @@ def demarrage():
     for elt in liste_musique:
         #image=final_result[i]
         #i+=1
+        if not elt.endswith(".mp3"):
+            continue
         t1=time.time()
         if compteur == 0:
             frame = tk.Frame(scrollable_frame)
